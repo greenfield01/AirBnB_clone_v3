@@ -4,9 +4,9 @@ Contains the FileStorage class
 """
 
 import json
+import models
 from models.amenity import Amenity
 from models.base_model import BaseModel
-from datetime import datetime
 from models.city import City
 from models.place import Place
 from models.review import Review
@@ -19,6 +19,10 @@ classes = {"Amenity": Amenity, "BaseModel": BaseModel, "City": City,
 
 class FileStorage:
     """serializes instances to a JSON file & deserializes back to instances"""
+
+
+    classes = {"Amenity": Amenity, "City": City,
+           "Place": Place, "Review": Review, "State": State, "User": User}
 
     # string - path to the JSON file
     __file_path = "file.json"
@@ -56,7 +60,7 @@ class FileStorage:
                 jo = json.load(f)
             for key in jo:
                 self.__objects[key] = classes[jo[key]["__class__"]](**jo[key])
-        except:
+        except Exception:
             pass
 
     def delete(self, obj=None):
@@ -72,17 +76,30 @@ class FileStorage:
 
     def get(self, cls, id):
         """
-            retrieves one object based on class name and id
+        Returns the object based on the class name and its ID, or
+        None if not found
         """
-        if cls and id:
-            fetch_obj = "{}.{}".format(cls, id)
-            all_obj = self.all(cls)
-            return all_obj.get(fetch_obj)
+        if cls not in classes.values():
+            return None
+
+        all_cls = models.storage.all(cls)
+        for value in all_cls.values():
+            if (value.id == id):
+                return value
+
         return None
 
     def count(self, cls=None):
         """
-        count of all objects in storage
+        count the number of objects in storage
         """
-        return (len(self.all(cls)))
+        all_class = classes.values()
 
+        if not cls:
+            count = 0
+            for clas in all_class:
+                count += len(models.storage.all(clas).values())
+        else:
+            count = len(models.storage.all(cls).values())
+
+        return count
